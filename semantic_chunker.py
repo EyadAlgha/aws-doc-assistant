@@ -49,94 +49,12 @@ def merge_small_nodes(nodes, min_chars=200):
         merged[-1].metadata["page"] = sorted(set(pglist(merged[-1].metadata) + pglist(last.metadata)))
     return merged
 
-def _parse_pipe_table(block):
-    lines = block.split("\n")
-    table_lines, started = [], False
-    for ln in lines:
-        if ln.startswith("|"):
-            started = True
-            table_lines.append(ln)
-        elif started and "|" in ln:
-            table_lines.append(ln)
-        elif started and ln.strip() and "|" not in ln:
-            table_lines.append(ln)
-        elif started and not ln.strip():
-            break
-    raw = "\n".join(table_lines)
-
-    rows, cur = [], ""
-    for ln in raw.split("\n"):
-        if ln.startswith("|"):
-            if cur == "":
-                cur = ln
-            elif cur.rstrip().endswith("|") and cur.count("|") >= 4:
-                rows.append(cur); cur = ln
-            else:
-                cur += "\n" + ln
-        else:
-            cur += "\n" + ln
-    if cur:
-        rows.append(cur)
-
-    parsed = []
-    for row in rows:
-        parts = row.split("|")
-        if parts and parts[0].strip() == "":
-            parts = parts[1:]
-        if parts and parts[-1].strip() == "":
-            parts = parts[:-1]
-        cells = [re.sub(r"\s+", " ", c.replace("\n", "")).strip() for c in parts]
-        parsed.append(cells)
-    return parsed
-
-
-def explode_permission_table(text):
-    if "|" not in text:
-        return None
-    if "policy action" not in text.lower():
-        return None
-    rows = _parse_pipe_table(text)
-    if len(rows) < 2:
-        return None
-    header = [c.lower() for c in rows[0]]
-    if not any("policy action" in h for h in header):
-        return None
-    out = []
-    for r in rows[1:]:
-        if len(r) < 2 or not r[0]:
-            continue
-        api = r[0]
-        action = re.sub(r"^\(required\)\s*", "", r[1], flags=re.I).strip()
-        desc = r[2].rstrip(" .") if len(r) > 2 else ""
-        if not action:
-            continue
-        prose = f"To use the {api} API operation, the {action} permission is required."
-        if desc:
-            prose += f" {desc}."
-        out.append(prose)
-    return out or None
-
 def semantic_chunk(pages):
     docs = [Document(text=p['text'],
                      metadata={'page': [p['page_number']], 'headings': p['headings']})
             for p in pages]
     nodes = splitter.get_nodes_from_documents(docs)
-    nodes = merge_small_nodes(nodes)
-
-    final = []
-    for nd in nodes:
-        rows = explode_permission_table(nd.text)
-        if rows:
-            final.append(nd)
-            for prose in rows:
-                from copy import deepcopy
-                rn = deepcopy(nd)
-                rn.text = prose
-                rn.metadata = dict(nd.metadata)
-                final.append(rn)
-        else:
-            final.append(nd)
-    return final
+    return merge_small_nodes(nodes)
 
 def run(pdf_path, out_path):
     pages = load_pdf(pdf_path)
@@ -161,17 +79,15 @@ def run(pdf_path, out_path):
 
 if __name__ == '__main__':
     print(f'Running document chunking...')
-    processed = ['iam-ug', 'sagemaker-dg', 'bedrock-ug']
+
     data_path = Path('data')
     out_path = Path('output')
     pdf_files = list(data_path.glob('*.pdf'))
 
-    print(f'Found {len(pdf_files) - len(processed)} unprocessed documents in data path...')
+    print(f'Found {len(pdf_files)} documents in data path...')
 
     for pfile in pdf_files:
         file_name = pfile.stem
-        if file_name in processed:
-            continue
 
         print(f'Chunking {file_name}...')
         chunked_name = out_path / (file_name.split('-')[0] + '_chunks.json')
