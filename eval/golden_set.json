@@ -1,0 +1,65 @@
+[
+  {"question": "What is the service prefix for AWS Certificate Manager?", "ground_truth": "acm", "source": "iam", "type": "prefix_lookup"},
+  {"question": "What is the service prefix for Amazon Athena?", "ground_truth": "athena", "source": "iam", "type": "prefix_lookup"},
+  {"question": "What is the service prefix for AWS Backup?", "ground_truth": "backup", "source": "iam", "type": "prefix_lookup"},
+  {"question": "How do I assume an IAM role using the AWS CLI?", "ground_truth": "Use the aws sts assume-role command with --role-arn and --role-session-name. It returns temporary credentials (AccessKeyId, SecretAccessKey, SessionToken).", "source": "iam", "type": "cli_howto"},
+  {"question": "Which command updates the trust policy of an IAM role via CLI?", "ground_truth": "aws iam update-assume-role-policy --role-name <name> --policy-document file://<file>.json", "source": "iam", "type": "cli_howto"},
+  {"question": "What does the iam:PassRole permission allow?", "ground_truth": "It allows an identity to pass an IAM role to an AWS service. The role can only be passed to a service in the same AWS account.", "source": "iam", "type": "concept"},
+  {"question": "Why is using a wildcard in the Resource of an iam:PassRole policy risky?", "ground_truth": "It is overly permissive — it allows passing the role on multiple resources. AWS recommends specifying resource ARNs or adding the iam:PassedToService condition key.", "source": "iam", "type": "security"},
+  {"question": "What is an IAM instance profile and how many roles can it hold?", "ground_truth": "A container for an IAM role used with EC2 instances. It can contain only one IAM role, and that limit cannot be increased.", "source": "iam", "type": "concept"},
+  {"question": "What are the steps to create an IAM role for cross-account access via CLI?", "ground_truth": "Create the role (aws iam create-role), attach a managed policy (attach-role-policy) or inline policy (put-role-policy), optionally tag (tag-role), optionally set a permissions boundary (put-role-permissions-boundary).", "source": "iam", "type": "cli_howto"},
+  {"question": "What is the difference between a permissions policy and a trust policy on an IAM role?", "ground_truth": "A permissions policy grants what the role can do; a trust policy defines which principals can assume the role.", "source": "iam", "type": "concept"},
+
+  {"question": "Which permission is required to create a SageMaker training/AutoML job besides the create action?", "ground_truth": "iam:PassRole, plus kms:CreateGrant if a VolumeKmsKeyId is specified and the role lacks that permission.", "source": "sagemaker", "type": "permissions_table"},
+  {"question": "What permissions does CreateNotebookInstance require in SageMaker?", "ground_truth": "sagemaker:CreateNotebookInstance and iam:PassRole; plus ec2 network permissions if a VPC is specified, kms permissions if an encryption key is specified, and secretsmanager:GetSecretValue for a private Git repo.", "source": "sagemaker", "type": "permissions_table"},
+  {"question": "What prefix does SageMaker add to role names created through its console?", "ground_truth": "It prepends 'sagemaker-' to the role name.", "source": "sagemaker", "type": "concept"},
+  {"question": "How does SageMaker AI work with IAM service roles?", "ground_truth": "SageMaker can assume a service role on your behalf to access resources in other services. The role appears in your IAM account and is owned by the account.", "source": "sagemaker", "type": "concept"},
+  {"question": "How do I find the execution role ARN for a SageMaker domain?", "ground_truth": "Under Execution role, copy the ARN, open the IAM console, choose Roles, paste the ARN, keep the role name after the last slash, and select the role.", "source": "sagemaker", "type": "howto"},
+  {"question": "What is the ARN format for a SageMaker model resource?", "ground_truth": "arn:aws:sagemaker:region:account-id:model/modelName", "source": "sagemaker", "type": "arn_format"},
+
+  {"question": "What permissions are needed to run batch inference in Amazon Bedrock?", "ground_truth": "Bedrock actions such as CreateModelInvocationJob, GetModelInvocationJob, ListModelInvocationJobs, StopModelInvocationJob, plus list/get model and tagging actions.", "source": "bedrock", "type": "permissions"},
+  {"question": "What tag prefix does Bedrock Guardrails reserve for guarded content?", "ground_truth": "amazon-bedrock-guardrails-guardContent (the prefix amazon-bedrock is reserved by guardrails).", "source": "bedrock", "type": "concept"},
+  {"question": "How do you mark content for guardrails processing in a Bedrock prompt?", "ground_truth": "Wrap the content in <amazon-bedrock-guardrails-guardContent_xyz> tags and set the tagSuffix in amazon-bedrock-guardrailConfig.", "source": "bedrock", "type": "howto"},
+  {"question": "What does the iam:PassedToService condition key do?", "ground_truth": "It restricts which service a role can be passed to, reducing iam:PassRole scope to specific services.", "source": "iam", "type": "concept"},
+
+  {"question": "What command retrieves short-term credentials for an IAM role?", "ground_truth": "aws sts assume-role --role-arn <arn> --role-session-name <name>", "source": "iam", "type": "cli_howto"},
+  {"question": "What is the service prefix for AWS Audit Manager?", "ground_truth": "auditmanager", "source": "iam", "type": "prefix_lookup"},
+  {"question": "What is the service prefix for Amazon Managed Workflows for Apache Airflow?", "ground_truth": "airflow", "source": "iam", "type": "prefix_lookup"},
+  {"question": "Can you pass an IAM role across AWS accounts directly?", "ground_truth": "No. PassRole only works within the same account. To cross accounts, create a role in Account B that assumes the Account A role, then pass the Account B role.", "source": "iam", "type": "concept"},
+  {"question": "What managed policy grants full access to every service except IAM and Organizations?", "ground_truth": "PowerUserAccess.", "source": "iam", "type": "concept"},
+  {"question": "How do you force a role change to take effect on an EC2 instance immediately?", "ground_truth": "Disassociate then re-associate the instance profile, or stop and restart the instance.", "source": "iam", "type": "howto"},
+  {"question": "What ARN format does a SageMaker labeling job use?", "ground_truth": "arn:aws:sagemaker:region:account-id:labeling-job/labelingJobName", "source": "sagemaker", "type": "arn_format"},
+  {"question": "Which two permissions usually go together for IAM Access Analyzer policy generation?", "ground_truth": "iam:PassRole and iam:GetRole.", "source": "iam", "type": "permissions"},
+  {"question": "What does the AdministratorAccess managed policy allow regarding passing roles?", "ground_truth": "It grants permission to pass any IAM role to any AWS service; attach only to administrators.", "source": "iam", "type": "security"},
+  {"question": "What should you use instead of tagging a role to control who can pass it?", "ground_truth": "Do not use ResourceTag for this — it is unreliable. Specify resource ARNs or use iam:PassedToService instead.", "source": "iam", "type": "security"},
+
+  {"question": "What is the service prefix for Amazon S3?", "ground_truth": "s3", "source": "s3", "type": "prefix_lookup"},
+  {"question": "What permissions are required to create an S3 bucket policy?", "ground_truth": "s3:PutBucketPolicy", "source": "s3", "type": "permissions"},
+  {"question": "What is the ARN format for an S3 bucket?", "ground_truth": "arn:aws:s3:::bucket_name", "source": "s3", "type": "arn_format"},
+
+  {"question": "What is the service prefix for AWS Lambda?", "ground_truth": "lambda", "source": "lambda", "type": "prefix_lookup"},
+  {"question": "What permissions does a Lambda execution role need to write logs?", "ground_truth": "logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents", "source": "lambda", "type": "permissions"},
+  {"question": "How do you invoke a Lambda function with the AWS CLI?", "ground_truth": "aws lambda invoke --function-name <name> response.json", "source": "lambda", "type": "cli_howto"},
+
+  {"question": "What is an AWS Glue crawler?", "ground_truth": "A crawler connects to a data store, determines the schema, and creates metadata tables in the Glue Data Catalog.", "source": "glue", "type": "concept"},
+  {"question": "What IAM permissions does a Glue job role require for S3 access?", "ground_truth": "s3:GetObject and s3:PutObject on the relevant buckets, plus glue service permissions.", "source": "glue", "type": "permissions"},
+
+  {"question": "What is the service prefix for Amazon EC2?", "ground_truth": "ec2", "source": "ec2", "type": "prefix_lookup"},
+  {"question": "What permissions are required to launch an EC2 instance?", "ground_truth": "ec2:RunInstances, plus iam:PassRole if an instance profile is attached.", "source": "ec2", "type": "permissions"},
+  {"question": "What is the ARN format for an EC2 instance?", "ground_truth": "arn:aws:ec2:region:account-id:instance/instance-id", "source": "ec2", "type": "arn_format"},
+
+  {"question": "What is a VPC security group?", "ground_truth": "A virtual firewall that controls inbound and outbound traffic for resources in a VPC.", "source": "vpc", "type": "concept"},
+  {"question": "What permissions are needed to create a VPC subnet?", "ground_truth": "ec2:CreateSubnet", "source": "vpc", "type": "permissions"},
+
+  {"question": "What is an AWS CloudFormation stack?", "ground_truth": "A collection of AWS resources managed together as a single unit, created and updated from a template.", "source": "cfn", "type": "concept"},
+  {"question": "What is the ARN format for a CloudFormation stack?", "ground_truth": "arn:aws:cloudformation:region:account-id:stack/stack-name/id", "source": "cfn", "type": "arn_format"},
+
+  {"question": "What does Amazon Comprehend do?", "ground_truth": "A natural language processing service that extracts insights such as entities, key phrases, sentiment, and language from text.", "source": "comprehend", "type": "concept"},
+  {"question": "What is the service prefix for Amazon Comprehend?", "ground_truth": "comprehend", "source": "comprehend", "type": "prefix_lookup"},
+
+  {"question": "What does Amazon Rekognition detect in images?", "ground_truth": "Objects, scenes, faces, text, and inappropriate content in images and videos.", "source": "rekognition", "type": "concept"},
+  {"question": "What is the service prefix for Amazon Rekognition?", "ground_truth": "rekognition", "source": "rekognition", "type": "prefix_lookup"},
+
+  {"question": "What does Amazon Textract extract from documents?", "ground_truth": "Text, handwriting, forms, and tables from scanned documents.", "source": "textract", "type": "concept"},
+  {"question": "How do you call Textract to analyze a document synchronously?", "ground_truth": "Use the AnalyzeDocument API with the document bytes or an S3 object reference.", "source": "textract", "type": "howto"}
+]
