@@ -6,8 +6,7 @@ from langchain_core.documents import Document
 from langchain_chroma import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.retrievers import BM25Retriever
-from langchain.retrievers import EnsembleRetriever, ContextualCompressionRetriever
-from langchain.retrievers.document_compressors import CrossEncoderReranker
+from langchain.retrievers import EnsembleRetriever
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from langchain_community.llms import Ollama
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -98,15 +97,10 @@ hybrid_retriever = EnsembleRetriever(
 )
 
 
-# Reranker
+# Reranker (cross-encoder used directly in retrieve() for per-query reranking)
 cross_encoder = HuggingFaceCrossEncoder(
     model_name = 'BAAI/bge-reranker-v2-m3',
     model_kwargs= {'device': 'cuda'}
-)
-reranker = CrossEncoderReranker(model=cross_encoder, top_n=5)
-retriever = ContextualCompressionRetriever(
-    base_compressor=reranker,
-    base_retriever=hybrid_retriever
 )
 
 # llm and grounded prompt
@@ -152,24 +146,29 @@ def decompose(q):
         subs = [q] + subs
     return subs[:4]
  
+def _rerank(docs_, query, top_n):
+    """Score docs against a single query with the cross-encoder, keep top_n."""
+    if not docs_:
+        return []
+    scores = cross_encoder.score([(query, d.page_content) for d in docs_])
+    ranked = sorted(zip(docs_, scores), key=lambda x: x[1], reverse=True)
+    return [d for d, _ in ranked[:top_n]]
+
 def retrieve(q, history):
-    """Full retrieval: contextualize -> decompose -> multi-retrieve -> dedup -> rerank."""
+    """Full retrieval: contextualize -> decompose -> rerank each sub-query -> union."""
     standalone = contextualize(q, history)
     queries = decompose(standalone)
- 
-    pool, seen = [], set()
+    
+    per_query = 5 if len(queries) == 1 else 3
+    final, seen = [], set()
     for sub in queries:
-        for d in hybrid_retriever.invoke(sub):
+        for d in _rerank(hybrid_retriever.invoke(sub), sub, per_query):
             key = d.metadata.get("unique_id")
             if key in seen:
                 continue
             seen.add(key)
-            pool.append(d)
- 
-    if not pool:
-        return []
-    # rerank the merged pool against the ORIGINAL standalone question
-    return reranker.compress_documents(pool, standalone)
+            final.append(d)
+    return final
  
 def format_context(docs_):
     return "\n\n".join(
