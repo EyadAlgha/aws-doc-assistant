@@ -131,6 +131,7 @@ def contextualize(q, history):
         return q
     hist = _fmt_history(history).replace("{", "{{").replace("}", "}}")  # escape braces
     out = llm.invoke(CONTEXTUALIZE.format(history=hist, q=q)).strip()
+    out = out.split("Standalone question:")[-1].strip()  # drop echoed label
     return out or q
  
 def decompose(q):
@@ -155,10 +156,11 @@ def _rerank(docs_, query, top_n):
     return [d for d, _ in ranked[:top_n]]
 
 def retrieve(q, history):
-    """Full retrieval: contextualize -> decompose -> rerank each sub-query -> union."""
+    """contextualize -> decompose -> rerank each sub-query -> union.
+    Returns (standalone, docs) so the answer LLM gets the resolved question."""
     standalone = contextualize(q, history)
     queries = decompose(standalone)
-    
+
     per_query = 8 if len(queries) == 1 else 3
     final, seen = [], set()
     for sub in queries:
@@ -168,7 +170,7 @@ def retrieve(q, history):
                 continue
             seen.add(key)
             final.append(d)
-    return final
+    return standalone, final
  
 def format_context(docs_):
     parts = []
@@ -191,21 +193,21 @@ def sources_of(docs_):
  
 # Answer (non-stream and stream)
 def answer(q, history):
-    docs_ = retrieve(q, history)
+    standalone, docs_ = retrieve(q, history)
     if not docs_:
         return "Not found in the provided AWS docs.", []
     ctx = format_context(docs_)
-    text = llm.invoke(SYSTEM.format(context=ctx, question=q))
+    text = llm.invoke(SYSTEM.format(context=ctx, question=standalone))
     return text, sources_of(docs_)
- 
+
 def answer_stream(q, history):
-    docs_ = retrieve(q, history)
+    standalone, docs_ = retrieve(q, history)
     if not docs_:
         yield ("sources", [])
         yield ("token", "Not found in the provided AWS docs.")
         return
     yield ("sources", sources_of(docs_))
     ctx = format_context(docs_)
-    prompt = SYSTEM.format(context=ctx, question=q)
+    prompt = SYSTEM.format(context=ctx, question=standalone)
     for tok in llm.stream(prompt):
         yield ("token", tok)

@@ -27,9 +27,9 @@ golden = json.load(open('eval/golden_set.json'))
 rows = []
 for item in golden:
     q = item['question']
-    docs = retrieve(q, [])
+    standalone, docs = retrieve(q, [])
     ctx = format_context(docs)
-    ans = llm.invoke(SYSTEM.format(context=ctx, question=q))
+    ans = llm.invoke(SYSTEM.format(context=ctx, question=standalone))
     rows.append({
         'question': q,
         'answer': ans,
