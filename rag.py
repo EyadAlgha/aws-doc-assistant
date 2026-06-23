@@ -159,7 +159,7 @@ def retrieve(q, history):
     standalone = contextualize(q, history)
     queries = decompose(standalone)
     
-    per_query = 5 if len(queries) == 1 else 3
+    per_query = 8 if len(queries) == 1 else 3
     final, seen = [], set()
     for sub in queries:
         for d in _rerank(hybrid_retriever.invoke(sub), sub, per_query):
@@ -171,10 +171,15 @@ def retrieve(q, history):
     return final
  
 def format_context(docs_):
-    return "\n\n".join(
-        f"[{i+1}] ({d.metadata.get('source','')} p{d.metadata.get('pages','')})\n{d.page_content}"
-        for i, d in enumerate(docs_)
-    )
+    parts = []
+    for i, d in enumerate(docs_):
+        m = d.metadata
+        # include headings so the model can attribute text to its service
+        head = f" — {m['headings']}" if m.get('headings') else ""
+        parts.append(
+            f"[{i+1}] ({m.get('source','')} p{m.get('pages','')}{head})\n{d.page_content}"
+        )
+    return "\n\n".join(parts)
  
 def sources_of(docs_):
     return [
